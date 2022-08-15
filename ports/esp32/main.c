@@ -67,6 +67,11 @@
 #include "extmod/modbluetooth.h"
 #endif
 
+#if MICROPY_PY_USSL && MICROPY_SSL_MBEDTLS && MICROPY_TRACKED_ALLOC && CONFIG_MBEDTLS_CUSTOM_MEM_ALLOC
+#include "py/misc.h"
+#include "mbedtls/platform.h"
+#endif
+
 // MicroPython runs as a task under FreeRTOS
 #define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
 #define MP_TASK_STACK_SIZE      (16 * 1024)
@@ -142,6 +147,11 @@ void mp_task(void *pvParameter) {
         mp_task_heap_size = MIN(heap_caps_get_largest_free_block(MALLOC_CAP_8BIT), heap_total / 2);
         mp_task_heap = malloc(mp_task_heap_size);
     }
+
+    #if MICROPY_PY_USSL && MICROPY_SSL_MBEDTLS && MICROPY_TRACKED_ALLOC && CONFIG_MBEDTLS_CUSTOM_MEM_ALLOC
+    // Configure mbedtls to allocate from the heap
+    mbedtls_platform_set_calloc_free(&m_tracked_calloc, &m_tracked_free);
+    #endif
 
 soft_reset:
     // initialise the stack pointer for the main thread
