@@ -102,7 +102,7 @@ SRC_THIRDPARTY_C += $(addprefix $(LITTLEFS_DIR)/,\
 	lfs2_util.c \
 	)
 
-$(BUILD)/$(LITTLEFS_DIR)/lfs2.o: CFLAGS += -Wno-missing-field-initializers
+$(BUILD)/$(LITTLEFS_DIR)/lfs2.o: CFLAGS += -Wno-shadow -Wno-missing-prototypes
 endif
 
 ################################################################################
