@@ -31,6 +31,7 @@
 #include "py/mphal.h"
 #include "extmod/vfs.h"
 #include "modesp32.h"
+#include "esp_flash.h"
 #include "esp_ota_ops.h"
 
 // esp_partition_read and esp_partition_write can operate on arbitrary bytes
@@ -52,6 +53,8 @@ typedef struct _esp32_partition_obj_t {
     uint8_t *cache;
     uint16_t block_size;
 } esp32_partition_obj_t;
+
+extern esp_flash_t *esp_flash_default_chip;
 
 #if MICROPY_VFS_ROM_IOCTL
 
@@ -145,6 +148,50 @@ static mp_int_t esp32_partition_get_buffer(mp_obj_t self_in, mp_buffer_info_t *b
     }
 }
 #endif
+
+static mp_obj_t esp32_partition_register(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    // Parse args
+    enum { ARG_offset, ARG_size, ARG_type, ARG_subtype, ARG_label, ARG_block_size };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_offset,     MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_size,       MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_type,       MP_ARG_INT, {.u_int = ESP_PARTITION_TYPE_DATA} },
+        { MP_QSTR_subtype,    MP_ARG_INT, {.u_int = ESP_PARTITION_SUBTYPE_DATA_UNDEFINED} },
+        { MP_QSTR_label,      MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE} },
+        { MP_QSTR_block_size, MP_ARG_INT, {.u_int = NATIVE_BLOCK_SIZE_BYTES} },
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    // Get optional label string
+    const char *label = "";
+    if (args[ARG_label].u_obj != mp_const_none) {
+        label = mp_obj_str_get_str(args[ARG_label].u_obj);
+    }
+
+    // Register the partition
+    const esp_partition_t *partition = NULL;
+    check_esp_err(esp_partition_register_external(
+        esp_flash_default_chip,
+        args[ARG_offset].u_int,
+        args[ARG_size].u_int,
+        label,
+        args[ARG_type].u_int,
+        args[ARG_subtype].u_int,
+        &partition
+        ));
+
+    return MP_OBJ_FROM_PTR(esp32_partition_new(partition, args[ARG_block_size].u_int));
+}
+static MP_DEFINE_CONST_FUN_OBJ_KW(esp32_partition_register_fun_obj, 0, esp32_partition_register);
+static MP_DEFINE_CONST_STATICMETHOD_OBJ(esp32_partition_register_obj, MP_ROM_PTR(&esp32_partition_register_fun_obj));
+
+static mp_obj_t esp32_partition_deregister(mp_obj_t self_in) {
+    esp32_partition_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_esp_err(esp_partition_deregister_external(self->part));
+    return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(esp32_partition_deregister_obj, esp32_partition_deregister);
 
 static mp_obj_t esp32_partition_find(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     // Parse args
@@ -298,6 +345,9 @@ static MP_DEFINE_CONST_CLASSMETHOD_OBJ(esp32_partition_mark_app_valid_cancel_rol
     MP_ROM_PTR(&esp32_partition_mark_app_valid_cancel_rollback_fun_obj));
 
 static const mp_rom_map_elem_t esp32_partition_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_register), MP_ROM_PTR(&esp32_partition_register_obj) },
+    { MP_ROM_QSTR(MP_QSTR_deregister), MP_ROM_PTR(&esp32_partition_deregister_obj) },
+
     { MP_ROM_QSTR(MP_QSTR_find), MP_ROM_PTR(&esp32_partition_find_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_info), MP_ROM_PTR(&esp32_partition_info_obj) },

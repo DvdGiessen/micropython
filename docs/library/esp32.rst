@@ -116,6 +116,20 @@ methods to enable over-the-air (OTA) updates.
     of the partition to retrieve, or one of the constants: ``BOOT`` or ``RUNNING``.
     *block_size* specifies the byte size of an individual block.
 
+.. classmethod:: Partition.register(offset, size, type=TYPE_DATA, subtype=0x06, label=None, block_size=4096)
+
+    Register a new partition (that isn't already explicitly specified in the
+    partition table) with the given *offset*, *size*, *type*, *subtype*, and
+    *label*. Useful for accessing data outside of the defined partitions.
+    Returns a Partition object.
+
+    *block_size* specifies the byte size of an individual block used by the returned
+    object.
+
+.. method:: Partition.deregister()
+
+    Deregisters a previously registered partition.
+
 .. classmethod:: Partition.find(type=TYPE_APP, subtype=0xff, label=None, block_size=4096)
 
     Find a partition specified by *type*, *subtype* and *label*.  Returns a
