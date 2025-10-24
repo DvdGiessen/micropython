@@ -193,10 +193,11 @@ typedef struct _mp_machine_soft_spi_obj_t {
 
 #endif
 
-// Objects for machine.mem8, machine.mem16 and machine.mem32.
+// Objects for machine.mem8, machine.mem16, machine.mem32, and machine.ptr
 extern const machine_mem_obj_t machine_mem8_obj;
 extern const machine_mem_obj_t machine_mem16_obj;
 extern const machine_mem_obj_t machine_mem32_obj;
+MP_DECLARE_CONST_FUN_OBJ_0(machine_ptr_obj);
 
 // These classes correspond to machine.Type entries in the machine module.
 // Their Python bindings are implemented in extmod, and their implementation

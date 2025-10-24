@@ -113,4 +113,12 @@ const machine_mem_obj_t machine_mem8_obj = {{&machine_mem_type}, 1};
 const machine_mem_obj_t machine_mem16_obj = {{&machine_mem_type}, 2};
 const machine_mem_obj_t machine_mem32_obj = {{&machine_mem_type}, 4};
 
+static mp_obj_t machine_ptr(mp_obj_t o) {
+    if (mp_obj_is_obj(o)) {
+        return mp_obj_new_int_from_uint((mp_uint_t)MP_OBJ_TO_PTR(o));
+    }
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(machine_ptr_obj, machine_ptr);
+
 #endif // MICROPY_PY_MACHINE_MEMX
